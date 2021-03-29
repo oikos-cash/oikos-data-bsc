@@ -6,7 +6,7 @@
 	"main": "index.js",
 	"browser": "browser.js",
 	"bin": {
-		"snxData": "bin.js"
+		"oksData": "bin.js"
 	},
 	"scripts": {
 		"lint": "eslint .",

@@ -6,15 +6,15 @@ const { SubscriptionClient } = require('subscriptions-transport-ws');
 const pageResults = require('graph-results-pager');
 
 const graphAPIEndpoints = {
-	snx: 'https://api.thegraph.com/subgraphs/name/synthetixio-team/synthetix',
+	oks: 'https://api.thegraph.com/subgraphs/name/oikos-cash/oikos',
 	depot: 'https://api.thegraph.com/subgraphs/name/synthetixio-team/synthetix-depot',
-	exchanges: 'https://api.thegraph.com/subgraphs/name/synthetixio-team/synthetix-exchanges',
-	rates: 'https://api.thegraph.com/subgraphs/name/synthetixio-team/synthetix-rates',
+	exchanges: 'https://api.thegraph.com/subgraphs/name/oikos-cash/exchanges',
+	rates: 'https://api.thegraph.com/subgraphs/name/oikos-cash/rates',
 };
 
 const graphWSEndpoints = {
-	exchanges: 'wss://api.thegraph.com/subgraphs/name/synthetixio-team/synthetix-exchanges',
-	rates: 'wss://api.thegraph.com/subgraphs/name/synthetixio-team/synthetix-rates',
+	exchanges: 'wss://api.thegraph.com/subgraphs/name/oikos-cash/exchanges',
+	rates: 'wss://api.thegraph.com/subgraphs/name/oikos-cash/rates',
 };
 
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
@@ -148,7 +148,7 @@ module.exports = {
 			date: new Date(timestamp * 1000),
 			hash: id.split('-')[0],
 			fromAddress: from,
-			fromAmount: fromAmount / 1e18, // shorthand way to convert wei into eth
+			fromAmount: fromAmount / 1e18, // shorthand way to convert wei into BNB
 			fromCurrencyKeyBytes: fromCurrencyKey,
 			fromCurrencyKey: hexToAscii(fromCurrencyKey),
 			fromAmountInUSD: fromAmountInUSD / 1e18,
@@ -168,17 +168,18 @@ module.exports = {
 				api: graphAPIEndpoints.exchanges,
 				query: {
 					entity: 'totals',
-					selection: {
+					/*selection: {
 						where: {
 							id: `\\"${network}\\"`,
 						},
-					},
-					properties: ['exchangers', 'exchangeUSDTally', 'totalFeesGeneratedInUSD'],
+					},*/
+					properties: ['trades', 'exchangers', 'exchangeUSDTally', 'totalFeesGeneratedInUSD'],
 				},
 				max: 1,
 			})
-				.then(([{ exchangers, exchangeUSDTally, totalFeesGeneratedInUSD }]) => ({
-					exchangers: Number(exchangers),
+				.then(([{ trades, exchangers, exchangeUSDTally, totalFeesGeneratedInUSD }]) => ({
+					trades: trades,
+					exchangers: exchangers,
 					exchangeUSDTally: exchangeUSDTally / 1e18,
 					totalFeesGeneratedInUSD: totalFeesGeneratedInUSD / 1e18,
 				}))
@@ -256,7 +257,7 @@ module.exports = {
 							date: new Date(timestamp * 1000),
 							hash: id.split('-')[0],
 							account,
-							amount: amount / 1e18, // shorthand way to convert wei into eth,
+							amount: amount / 1e18, // shorthand way to convert wei into BNB,
 							amountInUSD: amountInUSD / 1e18,
 							currencyKey: hexToAscii(currencyKey),
 							currencyKeyBytes: currencyKey,
@@ -306,7 +307,7 @@ module.exports = {
 	synths: {
 		issuers({ max = 10 } = {}) {
 			return pageResults({
-				api: graphAPIEndpoints.snx,
+				api: graphAPIEndpoints.oks,
 				max,
 				query: {
 					entity: 'issuers',
@@ -328,7 +329,7 @@ module.exports = {
 			maxBlock = undefined,
 		} = {}) {
 			return pageResults({
-				api: graphAPIEndpoints.snx,
+				api: graphAPIEndpoints.oks,
 				max,
 				query: {
 					entity: 'transfers',
@@ -337,7 +338,7 @@ module.exports = {
 						orderDirection: 'desc',
 						where: {
 							source: synth ? `\\"${synth}\\"` : undefined,
-							source_not: '\\"SNX\\"',
+							source_not: '\\"oks\\"',
 							from: from ? `\\"${from}\\"` : undefined,
 							to: to ? `\\"${to}\\"` : undefined,
 							from_not: `\\"${ZERO_ADDRESS}\\"`, // Ignore Issue events
@@ -387,7 +388,7 @@ module.exports = {
 						where: {
 							synth: synth ? `\\"${synth}\\"` : undefined,
 							synth_not_in: !synth
-								? '[' + ['SNX', 'ETH', 'XDR'].map(code => `\\"${code}\\"`).join(',') + ']'
+								? '[' + ['oks', 'BNB', 'ODR'].map(code => `\\"${code}\\"`).join(',') + ']'
 								: undefined, // ignore non-synth prices
 							block_gte: minBlock || undefined,
 							block_lte: maxBlock || undefined,
@@ -398,16 +399,21 @@ module.exports = {
 					properties: ['id', 'synth', 'rate', 'block', 'timestamp'],
 				},
 			})
-				.then(results =>
-					results.map(({ id, rate, block, timestamp, synth }) => ({
+				.then(results => {
+					console.log(results)
+					results.map(({ id, rate, block, timestamp, synth }, idx) => ({
+						
 						block: Number(block),
 						synth,
 						timestamp: Number(timestamp * 1000),
 						date: new Date(timestamp * 1000),
 						hash: id.split('-')[0],
 						rate: rate / 1e18,
-					})),
+					}))
+				}
+
 				)
+				 
 				.catch(err => console.error(err));
 		},
 		observe({ minTimestamp = Math.round(Date.now() / 1000) } = {}) {
@@ -419,7 +425,7 @@ module.exports = {
 				ws,
 			);
 
-			// Note: we can't use "first" here as some updates come together (the SNX oracle groups together some rates)
+			// Note: we can't use "first" here as some updates come together (the oks oracle groups together some rates)
 			const observable = client.request({
 				query: `subscription { rateUpdates(where: { timestamp_gt: ${minTimestamp}}, orderBy: timestamp, orderDirection: desc) { ${[
 					'id',
@@ -444,13 +450,13 @@ module.exports = {
 			};
 		},
 	},
-	snx: {
+	oks: {
 		holders({ max = 100 } = {}) {
 			return pageResults({
-				api: graphAPIEndpoints.snx,
+				api: graphAPIEndpoints.oks,
 				max,
 				query: {
-					entity: 'snxholders',
+					entity: 'oksholders',
 					selection: {
 						orderBy: 'collateral',
 						orderDirection: 'desc',
@@ -460,8 +466,8 @@ module.exports = {
 						'block', // the block this entity was last updated in
 						'timestamp', // the timestamp when this entity was last updated
 						'collateral', // Synthetix.collateral (all collateral the account has, including escrowed )
-						'balanceOf', // SNX balance in their wallet
-						'transferable', // All non-locked SNX
+						'balanceOf', // oks balance in their wallet
+						'transferable', // All non-locked oks
 						'initialDebtOwnership', // Debt data from SynthetixState, used to calculate debtBalance
 						'debtEntryAtIndex', // Debt data from SynthetixState, used to calculate debtBalance
 					],
@@ -496,7 +502,7 @@ module.exports = {
 
 		rewards({ max = 100 } = {}) {
 			return pageResults({
-				api: graphAPIEndpoints.snx,
+				api: graphAPIEndpoints.oks,
 				max,
 				query: {
 					entity: 'rewardEscrowHolders',
@@ -520,30 +526,30 @@ module.exports = {
 		 */
 		total() {
 			return pageResults({
-				api: graphAPIEndpoints.snx,
+				api: graphAPIEndpoints.oks,
 				query: {
-					entity: 'synthetixes',
+					entity: 'oikoses',
 					selection: {
 						where: {
 							id: 1,
 						},
 					},
-					properties: ['issuers', 'snxHolders'],
+					properties: ['issuers', 'oksHolders'],
 				},
 				max: 1,
 			})
-				.then(([{ issuers, snxHolders }]) => ({
+				.then(([{ issuers, oksHolders }]) => ({
 					issuers: Number(issuers),
-					snxHolders: Number(snxHolders),
+					oksHolders: Number(oksHolders),
 				}))
 				.catch(err => console.error(err));
 		},
 		/**
-		 * Get the latest SNX transfers
+		 * Get the latest oks transfers
 		 */
 		transfers({ from = undefined, to = undefined, max = 100, minBlock = undefined, maxBlock = undefined } = {}) {
 			return pageResults({
-				api: graphAPIEndpoints.snx,
+				api: graphAPIEndpoints.oks,
 				max,
 				query: {
 					entity: 'transfers',
@@ -551,7 +557,7 @@ module.exports = {
 						orderBy: 'timestamp',
 						orderDirection: 'desc',
 						where: {
-							source: '\\"SNX\\"',
+							source: '\\"oks\\"',
 							from: from ? `\\"${from}\\"` : undefined,
 							to: to ? `\\"${to}\\"` : undefined,
 							block_gte: minBlock || undefined,

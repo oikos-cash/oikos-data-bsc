@@ -11,7 +11,7 @@ module.exports = {
 	output: {
 		filename: 'browser.js',
 		path: path.resolve(__dirname),
-		library: 'snxData',
+		library: 'oksData',
 		libraryTarget: 'umd',
 	},
 };

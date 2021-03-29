@@ -4,7 +4,7 @@ const program = require('commander');
 const stringify = require('csv-stringify');
 const moment = require('moment');
 
-const { exchanges, depot, synths, rate, snx } = require('.');
+const { exchanges, depot, synths, rate, oks } = require('.');
 
 program
 	.command('depot.userActions')
@@ -172,38 +172,38 @@ program
 	});
 
 program
-	.command('snx.holders')
+	.command('oks.holders')
 	.option('-a, --addresses-only', 'Show addresses only')
 	.option('-m, --max <value>', 'Maximum number of results', 100)
 	.option('-j, --json', 'Whether or not to display the results as JSON')
 	.action(async ({ max, addressesOnly, json }) => {
-		snx
+		oks
 			.holders({ max, addressesOnly })
 			.then(results => (addressesOnly ? results.map(({ address }) => address) : results))
 			.then(results => console.log(json ? JSON.stringify(results, null, 2) : results));
 	});
 
-program.command('snx.total').action(async () => {
-	snx.total().then(console.log);
+program.command('oks.total').action(async () => {
+	oks.total().then(console.log);
 });
 
 program
-	.command('snx.transfers')
+	.command('oks.transfers')
 	.option('-f, --from <value>', 'A from address')
 	.option('-t, --to <value>', 'A to address')
 	.option(',m, --max <value>', 'Maximum number of results', 100)
 	.action(async ({ from, to, max }) => {
-		snx.transfers({ from, to, max }).then(console.log);
+		oks.transfers({ from, to, max }).then(console.log);
 	});
 
 program
-	.command('snx.rewards')
+	.command('oks.rewards')
 	.option('-a, --addresses-only', 'Show addresses only')
 	.option('-m, --max <value>', 'Maximum number of results', Infinity)
 	.option('-j, --json', 'Whether or not to display the results as JSON')
 
 	.action(async ({ max, json, addressesOnly }) => {
-		snx
+		oks
 			.rewards({ max })
 			.then(results => (addressesOnly ? results.map(({ address }) => address) : results))
 			.then(results => console.log(json ? JSON.stringify(results, null, 2) : results));
