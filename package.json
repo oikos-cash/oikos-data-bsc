@@ -1,8 +1,8 @@
 {
-	"name": "synthetix-data",
+	"name": "oikos-data",
 	"license": "MIT",
 	"version": "2.1.5",
-	"author": "Synthetix",
+	"author": "Oikos",
 	"main": "index.js",
 	"browser": "browser.js",
 	"bin": {
