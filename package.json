@@ -1,7 +1,7 @@
 {
 	"name": "oikos-data",
 	"license": "MIT",
-	"version": "2.1.5",
+	"version": "0.1.1",
 	"author": "Oikos",
 	"main": "index.js",
 	"browser": "browser.js",
